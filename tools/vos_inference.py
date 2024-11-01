@@ -69,6 +69,7 @@ def load_masks_from_dir(
         input_palette = None
         # each object is a directory in "{object_id:%03d}" format
         for object_name in os.listdir(os.path.join(input_mask_dir, video_name)):
+            print("loading object", object_name)
             object_id = int(object_name)
             input_mask_path = os.path.join(
                 input_mask_dir, video_name, object_name, f"{frame_name}.png"
@@ -128,11 +129,36 @@ def vos_inference(
     """Run VOS inference on a single video with the given predictor."""
     # load the video frames and initialize the inference state on this video
     video_dir = os.path.join(base_video_dir, video_name)
+
+    if '.zip' in video_dir:
+        print("using zipped video frames", video_dir)
+        using_zip = True
+        import zipfile
+        with zipfile.ZipFile(video_dir, 'r') as zip_ref:
+            video_dir = os.path.join(base_video_dir, video_name.split('.')[0])
+            zip_ref.extractall(video_dir) 
+
+        # also unzip the masks
+        mask_dir = os.path.join(input_mask_dir, video_name)
+        with zipfile.ZipFile(mask_dir, 'r') as zip_ref:
+            mask_dir = os.path.join(input_mask_dir, video_name.split('.')[0])
+            zip_ref.extractall(mask_dir)
+
+        video_name = video_name.split('.')[0]
+        print("extracted to", video_dir)
+    else:
+        using_zip = False
     frame_names = [
         os.path.splitext(p)[0]
         for p in os.listdir(video_dir)
         if os.path.splitext(p)[-1] in [".jpg", ".jpeg", ".JPG", ".JPEG"]
     ]
+
+    # if '.zip' in os.listdir(video_dir)[0]:
+    #     print("using zipped video frames")
+    #     import zipfile
+
+
     frame_names.sort(key=lambda p: int(os.path.splitext(p)[0]))
     inference_state = predictor.init_state(
         video_path=video_dir, async_loading_frames=False
@@ -155,6 +181,8 @@ def vos_inference(
                     os.path.join(input_mask_dir, video_name, f"{name}.png")
                 )
             ]
+            print("searching obj in", os.path.join(input_mask_dir, video_name))
+
         else:
             input_frame_inds = [
                 idx
@@ -243,6 +271,12 @@ def vos_inference(
             output_palette=output_palette,
         )
 
+    # delete the extracted frames if we used zipped video frames
+    if using_zip:
+        import shutil
+        print("deleting extracted frames", video_dir)
+        # shutil.rmtree(video_dir)
+
 
 @torch.inference_mode()
 @torch.autocast(device_type="cuda", dtype=torch.bfloat16)
@@ -266,6 +300,25 @@ def vos_separate_inference_per_object(
     """
     # load the video frames and initialize the inference state on this video
     video_dir = os.path.join(base_video_dir, video_name)
+    if '.zip' in video_dir:
+        print("using zipped video frames", video_dir)
+        using_zip = True
+        import zipfile
+        with zipfile.ZipFile(video_dir, 'r') as zip_ref:
+            video_dir = os.path.join(base_video_dir, video_name.split('.')[0])
+            zip_ref.extractall(video_dir) 
+
+        # also unzip the masks
+        mask_dir = os.path.join(input_mask_dir, video_name)
+        with zipfile.ZipFile(mask_dir, 'r') as zip_ref:
+            mask_dir = os.path.join(input_mask_dir, video_name.split('.')[0])
+            zip_ref.extractall(mask_dir)
+
+        video_name = video_name.split('.')[0]
+        print("extracted to", video_dir)
+    else:
+        using_zip = False
+
     frame_names = [
         os.path.splitext(p)[0]
         for p in os.listdir(video_dir)

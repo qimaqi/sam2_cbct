@@ -1,7 +1,7 @@
 # @package _global_
 
 scratch:
-  resolution: 1024
+  resolution: 512
   train_batch_size: 1
   num_train_workers: 1
   num_frames: 8
@@ -13,10 +13,11 @@ scratch:
 
 dataset:
   # PATHS to Dataset
-  img_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/valid/JPEGImages # PATH to MOSE JPEGImages folder
-  gt_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/valid/Annotations  # PATH to MOSE Annotations folder
+  img_folder: /cluster/work/cvl/qimaqi/miccai_2025/teeth_datasets/teeth_videos/train/JPEGImages # PATH to MOSE JPEGImages folder
+  gt_folder: /cluster/work/cvl/qimaqi/miccai_2025/teeth_datasets/teeth_videos/train/Annotations # PATH to MOSE Annotations folder
   file_list_txt: null #training/assets/MOSE_sample_train_list.txt # Optional PATH to filelist containing a subset of videos to be used for training
   multiplier: 2
+
 
 
 # Video transforms
@@ -64,6 +65,7 @@ trainer:
 
   model:
     _target_: training.model.sam2.SAM2Train
+    freeze_image_encoder: False
     image_encoder:
       _target_: sam2.modeling.backbones.image_encoder.ImageEncoder
       scalp: 1
@@ -236,7 +238,7 @@ trainer:
 
   optim:
     amp:
-      enabled: True
+      enabled: False
       amp_dtype: bfloat16
 
     optimizer:
@@ -324,7 +326,7 @@ trainer:
 
 launcher:
   num_nodes: 1
-  gpus_per_node: 8
+  gpus_per_node: 1
   experiment_log_dir: null # Path to log directory, defaults to ./sam2_logs/${config_name}
 
 # SLURM args if running on a cluster

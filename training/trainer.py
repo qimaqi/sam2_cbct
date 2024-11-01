@@ -453,10 +453,11 @@ class Trainer:
         model: nn.Module,
         phase: str,
     ):
-
+        # check batch size 
         outputs = model(batch)
         targets = batch.masks
         batch_size = len(batch.img_batch)
+        # print("image batch_size", batch.img_batch.shape)   
 
         key = batch.dict_key  # key for dataset
         loss = self.loss[key](outputs, targets)
@@ -878,7 +879,16 @@ class Trainer:
                 raise FloatingPointError(error_msg)
             else:
                 return
-
+        # debugging
+        # for name, params in self.model.named_parameters():
+        #     print("======================")
+        #     print(f"Parameter: {name}, requires_grad: {params.requires_grad}")
+        # print("======================")
+        # print("loss, loss_key", loss.requires_grad, loss_key)
+        
+        # nontrainable_parameters = [p for p in model.parameters(**param_kwargs) if not p.requires_grad]
+        # print("nontrainable_parameters", nontrainable_parameters)
+        
         self.scaler.scale(loss).backward()
         loss_mts[loss_key].update(loss.item(), batch_size)
         for extra_loss_key, extra_loss in extra_losses.items():

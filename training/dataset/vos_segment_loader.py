@@ -19,6 +19,7 @@ try:
 except:
     pass
 
+import zipfile
 
 class JSONSegmentLoader:
     def __init__(self, video_json_path, ann_every=1, frames_fps=24, valid_obj_ids=None):
@@ -110,7 +111,19 @@ class PalettisedPNGSegmentLoader:
         # build a mapping from frame id to their PNG mask path
         # note that in some datasets, the PNG paths could have more
         # than 5 digits, e.g. "00000000.png" instead of "00000.png"
-        png_filenames = os.listdir(self.video_png_root)
+        # check if it is zip files
+        if self.video_png_root.endswith(".zip"):
+            self.use_zip = True
+        else:
+            self.use_zip = False
+
+        if not self.use_zip:
+            png_filenames = os.listdir(self.video_png_root)
+        else:
+            with zipfile.ZipFile(self.video_png_root, "r") as z:
+                png_filenames = z.namelist()
+
+   
         self.frame_id_to_png_filename = {}
         for filename in png_filenames:
             frame_id, _ = os.path.splitext(filename)
@@ -125,14 +138,21 @@ class PalettisedPNGSegmentLoader:
             binary_segments: dict
         """
         # check the path
-        mask_path = os.path.join(
-            self.video_png_root, self.frame_id_to_png_filename[frame_id]
-        )
-
-        # load the mask
-        masks = PILImage.open(mask_path).convert("P")
-        masks = np.array(masks)
-
+        if not self.use_zip:
+            mask_path = os.path.join(
+                self.video_png_root, self.frame_id_to_png_filename[frame_id]
+            )
+            # load the mask
+            masks = PILImage.open(mask_path).convert("P")
+            masks = np.array(masks)
+        else:
+            with zipfile.ZipFile(self.video_png_root, "r") as z:
+                # get file from zip file
+                mask_path = self.frame_id_to_png_filename[frame_id]
+                with z.open(mask_path) as f:
+                    masks = PILImage.open(f).convert("P")
+                    masks = np.array(masks)
+            
         object_id = pd.unique(masks.flatten())
         object_id = object_id[object_id != 0]  # remove background (0)
 

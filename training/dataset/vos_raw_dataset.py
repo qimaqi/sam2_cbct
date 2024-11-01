@@ -18,7 +18,7 @@ import torch
 from iopath.common.file_io import g_pathmgr
 
 from omegaconf.listconfig import ListConfig
-
+import numpy as np
 from training.dataset.vos_segment_loader import (
     JSONSegmentLoader,
     MultiplePNGSegmentLoader,
@@ -26,6 +26,7 @@ from training.dataset.vos_segment_loader import (
     SA1BSegmentLoader,
 )
 
+import zipfile
 
 @dataclass
 class VOSFrame:
@@ -75,8 +76,14 @@ class PNGRawDataset(VOSRawDataset):
 
         # Read the subset defined in file_list_txt
         if file_list_txt is not None:
-            with g_pathmgr.open(file_list_txt, "r") as f:
-                subset = [os.path.splitext(line.strip())[0] for line in f]
+            # with g_pathmgr.open(file_list_txt, "r") as f:
+            #     subset = [os.path.splitext(line.strip())[0] for line in f]
+                # print("subset", subset)
+                # # read one line from the file
+                # line0 = f.readline()[0]
+                # print("line0", line0)
+            subset = np.loadtxt(file_list_txt, dtype=str)
+            # print("subset", subset)
         else:
             subset = os.listdir(self.img_folder)
 
@@ -91,6 +98,15 @@ class PNGRawDataset(VOSRawDataset):
         self.video_names = sorted(
             [video_name for video_name in subset if video_name not in excluded_files]
         )
+        print("=================================")
+        print("self.video_names", self.video_names)
+
+        if self.video_names[0].endswith(".zip"):
+            # check if .zip file exists
+            self.use_zip = True
+        else:
+            self.use_zip = False
+
 
         if self.single_object_mode:
             # single object mode
@@ -125,13 +141,27 @@ class PNGRawDataset(VOSRawDataset):
         video_mask_root = os.path.join(self.gt_folder, video_name)
 
         if self.is_palette:
+            # print('=================================')
+            # print("video_mask_root", video_mask_root)
             segment_loader = PalettisedPNGSegmentLoader(video_mask_root)
         else:
             segment_loader = MultiplePNGSegmentLoader(
                 video_mask_root, self.single_object_mode
             )
 
-        all_frames = sorted(glob.glob(os.path.join(video_frame_root, "*.jpg")))
+        if not self.use_zip:
+            all_frames = sorted(glob.glob(os.path.join(video_frame_root, "*.jpg")))
+        else:
+            # check if .zip file exists
+            zip_file = zipfile.ZipFile(video_frame_root, "r")
+            all_frames = sorted(zip_file.namelist())
+            all_frames = [f for f in all_frames if f.endswith(".jpg")]
+            all_frames = [os.path.join(video_frame_root, f) for f in all_frames]
+            zip_file.close()
+        # print('=================================')
+        # print("all_frames", all_frames)
+        # check if .zip file exists i
+
         if self.truncate_video > 0:
             all_frames = all_frames[: self.truncate_video]
         frames = []

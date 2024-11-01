@@ -290,6 +290,12 @@ class MultiStepMultiMasksAndIous(nn.Module):
         loss_dice = loss_dice * target_obj
         loss_iou = loss_iou * target_obj
 
+        # print("=======================")
+        # print("loss_mask", loss_mask.shape, loss_mask.requires_grad)
+        # print("loss_dice", loss_dice.shape, loss_dice.requires_grad)
+        # print("loss_iou", loss_iou.shape, loss_iou.requires_grad)
+        # print("loss_class", loss_class.shape, loss_class.requires_grad)
+
         # sum over batch dimension (note that the losses are already divided by num_objects)
         losses["loss_mask"] += loss_mask.sum()
         losses["loss_dice"] += loss_dice.sum()

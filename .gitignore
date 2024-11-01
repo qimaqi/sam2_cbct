@@ -8,3 +8,6 @@ build/*
 _C.*
 outputs/*
 checkpoints/*.pt
+outputs/
+sbatch_log/
+sam2_logs/

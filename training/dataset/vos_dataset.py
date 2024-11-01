@@ -22,7 +22,7 @@ from training.dataset.vos_segment_loader import JSONSegmentLoader
 from training.utils.data_utils import Frame, Object, VideoDatapoint
 
 MAX_RETRIES = 100
-
+import zipfile
 
 class VOSDataset(VisionDataset):
     def __init__(
@@ -135,18 +135,31 @@ class VOSDataset(VisionDataset):
         return len(self.video_dataset)
 
 
-def load_images(frames):
+def load_images(frames, use_zip=False, zip_path=None):
     all_images = []
     cache = {}
     for frame in frames:
         if frame.data is None:
             # Load the frame rgb data from file
             path = frame.image_path
+            # print("Loading image from path: ", path)
             if path in cache:
                 all_images.append(deepcopy(all_images[cache[path]]))
                 continue
-            with g_pathmgr.open(path, "rb") as fopen:
-                all_images.append(PILImage.open(fopen).convert("RGB"))
+            if '.zip' not in path:
+                with g_pathmgr.open(path, "rb") as fopen:
+                    all_images.append(PILImage.open(fopen).convert("RGB"))
+            else:
+                zipfile_path, file_name = path.split('.zip')
+                file_name = file_name[1:]
+                zipfile_path = zipfile_path + '.zip'
+                with zipfile.ZipFile(zipfile_path, 'r') as zip_ref:
+                    # print("Extracting file: ", file_name)
+                    # print("from", zip_ref.namelist())
+                    with zip_ref.open(file_name) as file:
+                        all_images.append(PILImage.open(file).convert("RGB"))
+
+            
             cache[path] = len(all_images) - 1
         else:
             # The frame rgb data has already been loaded

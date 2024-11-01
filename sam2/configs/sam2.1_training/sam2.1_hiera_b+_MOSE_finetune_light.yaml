@@ -1,10 +1,10 @@
 # @package _global_
 
 scratch:
-  resolution: 1024
+  resolution: 512
   train_batch_size: 1
   num_train_workers: 1
-  num_frames: 8
+  num_frames: 2
   max_num_objects: 3
   base_lr: 5.0e-6
   vision_lr: 3.0e-06
@@ -13,8 +13,8 @@ scratch:
 
 dataset:
   # PATHS to Dataset
-  img_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/valid/JPEGImages # PATH to MOSE JPEGImages folder
-  gt_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/valid/Annotations  # PATH to MOSE Annotations folder
+  img_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/train/JPEGImages # PATH to MOSE JPEGImages folder
+  gt_folder: /cluster/work/cvl/qimaqi/miccai_2025/mose/train/Annotations  # PATH to MOSE Annotations folder
   file_list_txt: null #training/assets/MOSE_sample_train_list.txt # Optional PATH to filelist containing a subset of videos to be used for training
   multiplier: 2
 
@@ -64,6 +64,7 @@ trainer:
 
   model:
     _target_: training.model.sam2.SAM2Train
+    freeze_image_encoder: True
     image_encoder:
       _target_: sam2.modeling.backbones.image_encoder.ImageEncoder
       scalp: 1
