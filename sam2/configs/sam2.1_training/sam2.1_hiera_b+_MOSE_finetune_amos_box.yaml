@@ -9,7 +9,7 @@ scratch:
   base_lr: 5.0e-6
   vision_lr: 3.0e-06
   phases_per_epoch: 1
-  num_epochs: 1000
+  num_epochs: 100
 
 dataset:
   # PATHS to Dataset
@@ -24,13 +24,13 @@ vos:
   train_transforms:
     - _target_: training.dataset.transforms.ComposeAPI
       transforms:
-        - _target_: training.dataset.transforms.RandomHorizontalFlip
-          consistent_transform: True
-        - _target_: training.dataset.transforms.RandomAffine
-          degrees: 25
-          shear: 20
-          image_interpolation: bilinear
-          consistent_transform: True
+        # - _target_: training.dataset.transforms.RandomHorizontalFlip
+        #   consistent_transform: True
+        # - _target_: training.dataset.transforms.RandomAffine
+        #   degrees: 25
+        #   shear: 20
+        #   image_interpolation: bilinear
+        #   consistent_transform: True
         - _target_: training.dataset.transforms.RandomResizeAPI
           sizes: ${scratch.resolution}
           square: true
@@ -41,9 +41,9 @@ vos:
           contrast: 0.03
           saturation: 0.03
           hue: null
-        - _target_: training.dataset.transforms.RandomGrayscale
-          p: 0.05
-          consistent_transform: True
+        # - _target_: training.dataset.transforms.RandomGrayscale
+        #   p: 0.05
+        #   consistent_transform: True
         - _target_: training.dataset.transforms.ColorJitter
           consistent_transform: False
           brightness: 0.1

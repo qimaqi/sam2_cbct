@@ -452,7 +452,7 @@ def main():
     parser.add_argument(
         "--sam2_checkpoint",
         type=str,
-        default="./checkpoints/sam2.1_hiera_b+.pt",
+        default="./checkpoints/sam2.1_hiera_base_plus.pt",
         help="path to the SAM 2 model checkpoint",
     )
     parser.add_argument(
@@ -512,10 +512,16 @@ def main():
         "some VOS datasets like LVOS or YouTube-VOS don't have all objects appearing in the first frame)",
     )
     parser.add_argument(
+<<<<<<< HEAD
         "--point_prompt",
         action="store_true",
         default=False,
         help="whether to use point prompt for the VOS inference",
+=======
+        "--use_vos_optimized_video_predictor",
+        action="store_true",
+        help="whether to use vos optimized video predictor with all modules compiled",
+>>>>>>> upstream/main
     )
     args = parser.parse_args()
 
@@ -528,6 +534,7 @@ def main():
         ckpt_path=args.sam2_checkpoint,
         apply_postprocessing=args.apply_postprocessing,
         hydra_overrides_extra=hydra_overrides_extra,
+        vos_optimized=args.use_vos_optimized_video_predictor,
     )
 
     if args.use_all_masks:
