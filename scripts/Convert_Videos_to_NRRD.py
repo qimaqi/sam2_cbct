@@ -11,11 +11,32 @@ import numpy as np
 from tqdm import tqdm
 from PIL import Image as PILImage
 import shutil
+import SimpleITK as sitk
 
 def video_to_volume(volume, save_path):
     print("saving volume to", save_path)
-    nib_volume = nib.Nifti1Image(volume, np.eye(4))
-    nib.save(nib_volume, save_path)
+    # nib_volume = nib.Nifti1Image(volume, np.eye(4))
+    # nib.save(nib_volume, save_path)
+    # header = {
+    #     'type': 'uint8',
+    #     'dimension': 3,
+    #     'space': 'left-posterior-superior',
+    #     'sizes': volume.shape,
+    #     'space directions': np.eye(3),
+    #     'space origin': np.zeros(3),
+    # }
+    # nrrd.write(save_path, volume)
+    nrrd_volume = sitk.GetImageFromArray(volume)
+    # add spacing information
+    nrrd_volume.SetSpacing([0.3, 0.3, 0.3])
+    nrrd_volume = sitk.Cast(nrrd_volume, sitk.sitkUInt8)
+    # set origin to 0
+    nrrd_volume.SetOrigin([0, 0, 0])
+    # set direction to (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+    nrrd_volume.SetDirection([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0])
+    sitk.WriteImage(nrrd_volume, save_path)
+
+
 
 
 def volume_to_video(volume, save_path, data_tpye='image'):
@@ -98,7 +119,7 @@ if __name__ == "__main__":
             else:
                 volume[frame_i] = frame
 
-        save_path = os.path.join(save_root_dir, video_dir_i + '.nii.gz')
+        save_path = os.path.join(save_root_dir, video_dir_i + 'cbct_segmentation.nrrd')
         # convert np to nibabel
         video_to_volume(volume, save_path)
 

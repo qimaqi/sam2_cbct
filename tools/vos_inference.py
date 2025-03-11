@@ -125,6 +125,7 @@ def vos_inference(
     score_thresh=0.0,
     use_all_masks=False,
     per_obj_png_file=False,
+    point_prompt = False
 ):
     """Run VOS inference on a single video with the given predictor."""
     # load the video frames and initialize the inference state on this video
@@ -289,6 +290,7 @@ def vos_separate_inference_per_object(
     score_thresh=0.0,
     use_all_masks=False,
     per_obj_png_file=False,
+    point_prompt = False
 ):
     """
     Run VOS inference on a single video with the given predictor.
@@ -363,12 +365,34 @@ def vos_separate_inference_per_object(
         input_frame_inds = sorted(inputs_per_object[object_id])
         predictor.reset_state(inference_state)
         for input_frame_idx in input_frame_inds:
-            predictor.add_new_mask(
-                inference_state=inference_state,
-                frame_idx=input_frame_idx,
-                obj_id=object_id,
-                mask=inputs_per_object[object_id][input_frame_idx],
-            )
+            if not point_prompt:
+                predictor.add_new_mask(
+                    inference_state=inference_state,
+                    frame_idx=input_frame_idx,
+                    obj_id=object_id,
+                    mask=inputs_per_object[object_id][input_frame_idx],
+                )
+            else:
+                masks = inputs_per_object[object_id][input_frame_idx]
+                # print("using point prompt for the VOS inference")
+                # Let's add a positive click at (x, y) = (210, 350) to get started
+                # points = np.array([[210, 350]], dtype=np.float32)
+                # we random choose 3 postiive choose of nonzero pixels of mask as positive click
+                points = np.argwhere(masks)
+                if len(points) == 0:
+                    continue
+                prompt_num = 1
+                random_idxs = np.random.choice(len(points), prompt_num, replace=False)
+                points = np.array([points[random_idxs]], np.float32)
+                # for labels, `1` means positive click and `0` means negative click
+                labels = np.array([1]*prompt_num, np.int64)
+                predictor.add_new_points_or_box(
+                    inference_state=inference_state,
+                    frame_idx=input_frame_idx,
+                    obj_id=object_id,
+                    points=points,
+                    labels=labels,
+                )      
 
         # run propagation throughout the video and collect the results in a dict
         for out_frame_idx, _, out_mask_logits in predictor.propagate_in_video(
@@ -487,6 +511,12 @@ def main():
         help="whether to track objects that appear later in the video (i.e. not on the first frame; "
         "some VOS datasets like LVOS or YouTube-VOS don't have all objects appearing in the first frame)",
     )
+    parser.add_argument(
+        "--point_prompt",
+        action="store_true",
+        default=False,
+        help="whether to use point prompt for the VOS inference",
+    )
     args = parser.parse_args()
 
     # if we use per-object PNG files, they could possibly overlap in inputs and outputs
@@ -515,7 +545,7 @@ def main():
         video_names = [
             p
             for p in os.listdir(args.base_video_dir)
-            if os.path.isdir(os.path.join(args.base_video_dir, p))
+            # if os.path.isdir(os.path.join(args.base_video_dir, p) or '.zip' in p)
         ]
     print(f"running VOS prediction on {len(video_names)} videos:\n{video_names}")
 
@@ -531,6 +561,7 @@ def main():
                 score_thresh=args.score_thresh,
                 use_all_masks=args.use_all_masks,
                 per_obj_png_file=args.per_obj_png_file,
+                point_prompt=args.point_prompt,
             )
         else:
             vos_separate_inference_per_object(
@@ -542,6 +573,7 @@ def main():
                 score_thresh=args.score_thresh,
                 use_all_masks=args.use_all_masks,
                 per_obj_png_file=args.per_obj_png_file,
+                point_prompt=args.point_prompt,
             )
 
     print(

@@ -1,12 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=sam2                        # Job name
 #SBATCH --nodes=1                             # Number of nodes
-#SBATCH --ntasks=8    
-#SBATCH --ntasks-per-node=8                    # Number of tasks (GPUs) per node
+#SBATCH --ntasks=1    
+#SBATCH --ntasks-per-node=1                    # Number of tasks (GPUs) per node
 #SBATCH --cpus-per-task=8
+#SBATCH --mem-per-cpu=8G                      # Memory per processor
 #SBATCH --time=48:00:00                        # Max time (HH:MM:SS)
-#SBATCH --output=sbatch_log/amos_nonfreeze_8gpu_%j.log                 # Output file
-#SBATCH --gpus=rtx_3090:8
+#SBATCH --output=sbatch_log/infer_log_%j.log                 # Output file
+#SBATCH --gpus=rtx_3090:1
 
 module load eth_proxy
 module load stack/2024-06
@@ -23,15 +24,27 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
 
-# python training/train.py \
-#     -c configs/sam2.1_training/sam2.1_hiera_t_MOSE_finetune_amos_freeze.yaml \
-#     --use-cluster 0 \
-#     --num-gpus 8 \
+python ./tools/vos_inference.py \
+  --sam2_cfg  configs/sam2.1/sam2.1_hiera_t.yaml \
+  --sam2_checkpoint /cluster/work/cvl/qimaqi/miccai_2025/sam2_cbct/sam2_logs/configs/sam2.1_training/sam2.1_hiera_t_MOSE_finetune_amos.yaml/checkpoints/checkpoint_1000.pt \
+  --base_video_dir /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/JPEGImages \
+  --input_mask_dir /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/Annotations \
+  --video_list_file /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/eval_fold_0.txt  \
+  --output_mask_dir ./outputs/amos_finetune_jointly_track \
+  --track_object_appearing_later_in_video
 
-python training/train.py \
-    -c configs/sam2.1_training/sam2.1_hiera_t_MOSE_finetune_amos.yaml \
-    --use-cluster 0 \
-    --num-gpus 8 \
+
+
+#   --track_object_appearing_later_in_video
+
+
+# doing evaluation
+
+
+ # srun --ntasks=8 --mem-per-cpu=4G --gpus=rtx_3090:1  --time=240 --pty bash -i
+#   img_folder: /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/JPEGImages # PATH to MOSE JPEGImages folder
+#   gt_folder: /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/Annotations # PATH to MOSE Annotations folder
+#   file_list_txt: /cluster/work/cvl/qimaqi/miccai_2025/Dataset219_AMOS2022_videos/train/train_fold_0.txt 
 
 # python training/train.py \
 #     -c configs/sam2.1_training/sam2.1_hiera_t_MOSE_finetune_teeth.yaml  \

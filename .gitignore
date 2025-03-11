@@ -11,3 +11,6 @@ checkpoints/*.pt
 outputs/
 sbatch_log/
 sam2_logs/
+outputs_video/
+inputs/
+scripts/joblogs/

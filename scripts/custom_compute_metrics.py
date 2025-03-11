@@ -22,7 +22,9 @@ from scipy.ndimage import label
  
 from cbct_utils import common
 from scipy.spatial import cKDTree
- 
+from medpy.metric import binary
+
+
 # from align_label import labels as LABELS
 LABELS =   {
         "background": 0,
@@ -50,6 +52,28 @@ import k3d
  
 from cbct_utils.common import resample, to_numpy
 
+
+def compute_binary_dice(pred, label):
+    addition = pred.sum() + label.sum()
+    if addition == 0:
+        return 1.0
+    return 2. * np.logical_and(pred, label).sum() / addition
+
+
+def mean(l):
+    if len(l) == 0:
+        return 0
+    return sum(l)/len(l)
+
+def compute_binary_hd95(pred, gt):
+    pred_sum = pred.sum()
+    gt_sum = gt.sum()
+
+    if pred_sum == 0 and gt_sum == 0:
+        return 0.0
+    if pred_sum == 0 or gt_sum == 0:
+        return np.linalg.norm(pred.shape)
+    return binary.hd95(pred, gt)
 
 SLICER_COLOR_MAP = [8433280, 15849105, 11631205, 7321810, 14181711, 14516837, 9498256, 12609624, 14480660, 320496,
                     16775900, 15129670, 13158635, 16448210, 16045617, 38862, 14181711, 12033244, 12048083, 10010063,
@@ -99,10 +123,10 @@ def compute_multiclass_dice_and_hd95(pred, mask):
     dice_per_class = {}
     hd_per_class = {}
  
-    for label in LABELS:
+    for label_name, label_id in LABELS.items():
         # label_id = label.id
         # label_name = label.name
-        label_id = LABELS[label]
+        # label_id = LABELS[label]
 
         binary_class_pred = pred == label_id
         #  print("binary_class_pred", type(binary_class_pred), binary_class_pred.sum())
@@ -131,8 +155,8 @@ if __name__ == "__main__":
     """
     parser = argparse.ArgumentParser(description="preprocess data function in total (CT data)")
     parser.add_argument("--eval_dir", type=str, help="CT Volume root directory", default='/hdd1/qimaqi/nrrd_dataset/conveted_nii/align_baseline/finish_result/')
-    parser.add_argument("--mask_dir", type=str, default='/hdd1/qimaqi/nrrd_dataset/conveted_nii/mask', help="org seg results directory")
-    parser.add_argument("--gt_suffix", type=str, required=False, default="gt_segmentation",
+    parser.add_argument("--mask_dir", type=str, default='/cluster/work/cvl/qimaqi/miccai_2025/sam2_cbct/outputs_video/amos_freeze_pred_cbct_gt', help="org seg results directory")
+    parser.add_argument("--gt_suffix", type=str, required=False, default=None,
                         help="Suffix of gt input files")
     args = parser.parse_args()
  
@@ -140,7 +164,7 @@ if __name__ == "__main__":
     eval_dir = args.eval_dir
  
  
-    volume_paths = glob.glob(os.path.join(eval_dir, "*.nrrd"))
+    volume_paths = glob.glob(os.path.join(eval_dir, "*.nii.gz"))
     volume_paths = sorted(volume_paths)
     loader = SimpleITKLoader()
  
@@ -161,7 +185,7 @@ if __name__ == "__main__":
     if not os.path.exists(result_save_path) or valid_num != len(volume_paths):
         for volume_i in tqdm(volume_paths):
             # check volume name if in results or not
-            volume_name = volume_i.split("/")[-1].split(".nrrd")[0]
+            volume_name = volume_i.split("/")[-1].split(".nii.gz")[0]
             print("volume_name", volume_name)
             if len(results['eval_results']) > 0:
                 # print("check volume_name", volume_name)
@@ -181,6 +205,10 @@ if __name__ == "__main__":
             # seg_name = volume_name.replace("cbct_segmentation", f"{args.gt_suffix}.nrrd")
             # print("volume_name", volume_name)
             # print("seg_name", seg_name)
+            if args.gt_suffix is None:
+                seg_name = volume_name + '.nii.gz'
+            else:
+                seg_name = volume_name.replace("cbct_segmentation", f"{args.gt_suffix}.nii.gz")
             seg_path = os.path.join(args.mask_dir, seg_name)
             # print("seg_path", seg_path)
             pred = loader.load_image(pred_path)
@@ -286,17 +314,3 @@ if __name__ == "__main__":
         json.dump(summerize_dict, f, indent=4)
  
  
- 
-# DiceCoefficient 0.8707595311449484
-# HausdorffDistance95 25.03385913061956
- 
-# DiceCoefficient 0.8788536043992946
-# HausdorffDistance95 23.10149847760796
- 
-
-# python custom_compute_metrics.py --eval_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/align_baseline/pred --mask_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/align_baseline/val_mask
-
-# python custom_compute_metrics.py --eval_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/align_baseline/worest10/img --mask_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/align_baseline/worest10/mask
-
-
-# python custom_compute_metrics.py --eval_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/nnunet_baseline/img --mask_dir /scratch_net/schusch/qimaqi/cbct_proj/CBCT/align_eval/nnunet_baseline/mask
