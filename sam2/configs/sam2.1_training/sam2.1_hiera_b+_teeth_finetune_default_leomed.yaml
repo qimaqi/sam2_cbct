@@ -13,8 +13,8 @@ scratch:
 
 dataset:
   # PATHS to Dataset
-  img_folder: /srv/beegfs-benderdata/scratch/qimaqi_data/data/miccai_2025/teeth_datasets/teeth_videos/train/JPEGImages # PATH to MOSE JPEGImages folder
-  gt_folder: /srv/beegfs-benderdata/scratch/qimaqi_data/data/miccai_2025/teeth_datasets/teeth_videos/train/Annotations # PATH to MOSE Annotations folder
+  img_folder: /cluster/dataset/bmic/qimaqi_data/teeth_datasets/teeth_videos/train/JPEGImages # PATH to MOSE JPEGImages folder
+  gt_folder: /cluster/dataset/bmic/qimaqi_data/teeth_datasets/teeth_videos/train/Annotations # PATH to MOSE Annotations folder
   file_list_txt: null #training/assets/MOSE_sample_train_list.txt # Optional PATH to filelist containing a subset of videos to be used for training
   multiplier: 2
 
